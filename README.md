@@ -1582,9 +1582,8 @@ END;
 
 ---
 
-# Tiefer in die Themen
-> Ein mächtiges, aber auch mit Vorsicht zu genießendes Werkzeug in Oracle: **Trigger**.
-
+ # TESTSTOFF -ab hier -
+ 
 ---
 
 # **Schritt 10: Einführung in Trigger – Automatisierte Aktionen**
