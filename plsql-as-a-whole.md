@@ -3669,9 +3669,7 @@ Damit haben wir die verschiedenen Aspekte der Fehlerbehandlung aus deiner Liste 
 
 ---
 
-Absolut! Kommen wir zum letzten großen Themenblock deiner Liste: **Native Dynamic SQL**.
-
-**Schritt 19: Native Dynamic SQL Teil 1 – Grundlagen und `EXECUTE IMMEDIATE`**
+# **Schritt 19: Native Dynamic SQL Teil 1 – Grundlagen und `EXECUTE IMMEDIATE`**
 
 **Was ist Dynamic SQL?**
 
