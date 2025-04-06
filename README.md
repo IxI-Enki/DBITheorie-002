@@ -1582,8 +1582,9 @@ END;
 
 ---
 
- # TESTSTOFF -ab hier -
- 
+# Tiefer in die Themen
+> Ein mächtiges, aber auch mit Vorsicht zu genießendes Werkzeug in Oracle: **Trigger**.
+
 ---
 
 # **Schritt 10: Einführung in Trigger – Automatisierte Aktionen**
@@ -4087,3 +4088,146 @@ END;
 * Du hast das gängige Muster gesehen, `SYS_REFCURSOR` als `OUT`-Parameter zu verwenden, um Abfrageergebnisse zurückzugeben.
 
 ---
+
+# **Schritt 21: Grundlagen Data Dictionary – Metadaten der Datenbank**
+
+**Was ist das Data Dictionary?**
+
+Stell dir das Data Dictionary (Datenwörterbuch) als das "Gehirn" oder das "Inhaltsverzeichnis" der Oracle-Datenbank vor. Es ist eine **Sammlung von Systemtabellen und Views**, die **Metadaten** enthalten – also Daten *über* die Daten und Strukturen in der Datenbank. Es beschreibt alle Objekte, ihre Eigenschaften, Beziehungen, Berechtigungen und den Zustand der Datenbank selbst.
+
+**Zweck des Data Dictionary:**
+
+* Es wird von Oracle **intern** verwendet, um die Datenbank zu verwalten und SQL-Anweisungen zu verarbeiten.
+* Es dient **Benutzern und Administratoren** dazu:
+    * Informationen über Datenbankobjekte zu erhalten (Welche Tabellen gibt es? Welche Spalten hat Tabelle X? Wer hat welche Rechte?).
+    * Den Aufbau der Datenbank zu verstehen.
+    * Den Quellcode von PL/SQL-Programmen einzusehen.
+    * Fehler bei der Objekterstellung zu finden.
+    * Die Datenbank zu administrieren und zu überwachen.
+
+**Zugriff auf das Data Dictionary:**
+
+Die eigentlichen Basistabellen des Data Dictionary (gehören dem Benutzer `SYS`, Namen enden oft auf `$`, z.B. `OBJ$`, `COL$`) sind komplex und sollten **niemals direkt** abgefragt werden.
+
+Stattdessen greift man über eine Reihe von **vordefinierten Views** auf die Metadaten zu. Diese Views bereiten die Informationen aus den Basistabellen in einer verständlichen und stabilen Form auf. Oracle pflegt diese Views automatisch, wenn DDL-Befehle (`CREATE`, `ALTER`, `DROP` etc.) ausgeführt werden.
+
+**Die wichtigsten View-Präfixe (USER_, ALL_, DBA_)**
+
+Die Data Dictionary Views sind nach ihrem **Sichtbarkeitsbereich** (Scope) gruppiert, was durch Präfixe angezeigt wird:
+
+1.  **`USER_` Views:**
+    * Zeigen Informationen über die Objekte, die **dem aktuell angemeldeten Benutzer gehören** (`OWNER = USER`).
+    * Dies ist der **häufigste Anwendungsbereich für Entwickler**. Du siehst deine eigenen Tabellen, Views, Prozeduren etc.
+    * Beispiele: `USER_OBJECTS`, `USER_TABLES`, `USER_TAB_COLUMNS`, `USER_SOURCE`.
+
+2.  **`ALL_` Views:**
+    * Zeigen Informationen über alle Objekte, auf die der **aktuell angemeldete Benutzer Zugriffsrechte hat**.
+    * Das umfasst die eigenen Objekte (`USER_`) **plus** die Objekte anderer Benutzer, für die man Rechte (`SELECT`, `EXECUTE` etc.) erhalten hat.
+    * Beispiele: `ALL_OBJECTS`, `ALL_TABLES`, `ALL_TAB_COLUMNS`, `ALL_SOURCE`.
+
+3.  **`DBA_` Views:**
+    * Zeigen Informationen über **alle Objekte in der gesamten Datenbank**, unabhängig vom Besitzer oder von Zugriffsrechten.
+    * Der Zugriff auf `DBA_` Views erfordert spezielle Privilegien (z.B. die `DBA`-Rolle oder `SELECT ANY DICTIONARY`).
+    * Hauptsächlich für **Datenbankadministratoren** gedacht.
+    * Beispiele: `DBA_OBJECTS`, `DBA_TABLES`, `DBA_USERS`, `DBA_ROLES`.
+
+*(Es gibt noch `V$` Views für dynamische Performance-Daten, aber die sind für den Einstieg weniger relevant).*
+
+**Wichtige Data Dictionary Views für Entwickler (Beispiele mit `USER_`)**
+
+Du musst dir **nicht** alle Namen und Spalten merken! Wichtig ist zu wissen, *dass* es diese Views gibt und wo man *ungefähr* suchen muss. Die wichtigsten sind:
+
+* **`USER_OBJECTS`**: Verzeichnis aller deiner Objekte.
+    * Spalten: `OBJECT_NAME`, `OBJECT_TYPE` (TABLE, VIEW, INDEX, PROCEDURE, FUNCTION, PACKAGE, PACKAGE BODY, TRIGGER, SEQUENCE, SYNONYM, TYPE...), `STATUS` (VALID/INVALID), `CREATED` (Erstelldatum), `LAST_DDL_TIME` (Letzte Änderung).
+* **`USER_TABLES`**: Details zu deinen Tabellen.
+    * Spalten: `TABLE_NAME`, `NUM_ROWS` (geschätzt!), `LAST_ANALYZED`.
+* **`USER_TAB_COLUMNS`** (oder `USER_TAB_COLS`): Details zu Spalten in deinen Tabellen und Views.
+    * Spalten: `TABLE_NAME`, `COLUMN_NAME`, `DATA_TYPE`, `DATA_LENGTH`, `DATA_PRECISION`, `DATA_SCALE`, `NULLABLE` ('Y'/'N'), `DATA_DEFAULT`.
+* **`USER_VIEWS`**: Definition deiner Views.
+    * Spalten: `VIEW_NAME`, `TEXT` (der `SELECT`-Text des Views, oft `LONG` oder `CLOB`).
+* **`USER_CONSTRAINTS`**: Deine Constraints (PK, FK, Unique, Check).
+    * Spalten: `CONSTRAINT_NAME`, `TABLE_NAME`, `CONSTRAINT_TYPE` ('P', 'R', 'U', 'C'), `R_CONSTRAINT_NAME` (bei FK: auf welchen PK zeigt er?).
+* **`USER_CONS_COLUMNS`**: Welche Spalten gehören zu welchem Constraint.
+    * Spalten: `CONSTRAINT_NAME`, `TABLE_NAME`, `COLUMN_NAME`, `POSITION`.
+* **`USER_SOURCE`**: **Sehr wichtig!** Enthält den Quellcode deiner PL/SQL-Objekte.
+    * Spalten: `NAME` (Objektname), `TYPE` (PROCEDURE, FUNCTION, PACKAGE...), `LINE` (Zeilennummer), `TEXT` (Quellcodezeile).
+* **`USER_ERRORS`**: **Sehr wichtig!** Zeigt Kompilierungsfehler für deine Objekte an.
+    * Spalten: `NAME` (Objektname), `TYPE`, `SEQUENCE`, `LINE`, `POSITION`, `TEXT` (Fehlermeldung). Unverzichtbar bei `CREATE OR REPLACE...` Fehlern! (`SHOW ERRORS` in SQL*Plus/SQL Developer fragt diese View ab).
+* **`USER_TRIGGERS`**: Details zu deinen Triggern.
+    * Spalten: `TRIGGER_NAME`, `TRIGGER_TYPE`, `TRIGGERING_EVENT`, `TABLE_NAME`, `STATUS`.
+* **`USER_ARGUMENTS`**: Parameter deiner Prozeduren und Funktionen.
+    * Spalten: `OBJECT_NAME`, `PACKAGE_NAME`, `ARGUMENT_NAME`, `POSITION`, `DATA_TYPE`, `IN_OUT`.
+
+**Beispiele für Abfragen:**
+
+```sql
+-- Zeige alle meine Tabellen an
+SELECT table_name FROM USER_TABLES ORDER BY table_name;
+
+-- Zeige Spalten und Datentypen der Tabelle MITARBEITER
+SELECT column_name, data_type, nullable
+FROM USER_TAB_COLUMNS
+WHERE table_name = 'MITARBEITER' -- Namen sind standardmäßig großgeschrieben
+ORDER BY column_id; -- column_id für die Reihenfolge
+
+-- Zeige alle meine Packages und deren Status
+SELECT object_name, status, last_ddl_time
+FROM USER_OBJECTS
+WHERE object_type = 'PACKAGE'
+ORDER BY object_name;
+
+-- Gibt es ungültige Objekte in meinem Schema?
+SELECT object_name, object_type, status
+FROM USER_OBJECTS
+WHERE status = 'INVALID';
+
+-- Zeige den Quellcode meines Packages 'ORDER_PKG' (Body)
+SELECT line, text
+FROM USER_SOURCE
+WHERE name = 'ORDER_PKG' AND type = 'PACKAGE BODY'
+ORDER BY line;
+
+-- Zeige Kompilierungsfehler für ein bestimmtes Objekt (falls es welche gab)
+SELECT line, position, text
+FROM USER_ERRORS
+WHERE name = 'GET_MITARBEITER_DYNAMISCH' AND type = 'PROCEDURE' -- Beispiel
+ORDER BY sequence;
+
+-- Finde den Primärschlüssel der Tabelle ABTEILUNG
+SELECT constraint_name
+FROM USER_CONSTRAINTS
+WHERE table_name = 'ABTEILUNG' AND constraint_type = 'P';
+
+-- Finde heraus, auf welche Tabelle/Spalte ein Foreign Key zeigt
+SELECT fk.constraint_name AS fk_name,
+       fk_cols.column_name AS fk_column,
+       pk.table_name AS referenced_table,
+       pk_cols.column_name AS referenced_column
+FROM user_constraints fk
+JOIN user_cons_columns fk_cols ON fk.constraint_name = fk_cols.constraint_name
+JOIN user_constraints pk ON fk.r_constraint_name = pk.constraint_name
+JOIN user_cons_columns pk_cols ON pk.constraint_name = pk_cols.constraint_name AND fk_cols.position = pk_cols.position
+WHERE fk.table_name = 'MITARBEITER' AND fk.constraint_type = 'R'; -- R for Referential (Foreign Key)
+
+```
+
+**Zusammenfassung Schritt 21:**
+
+* Du weißt, dass das Data Dictionary Metadaten über die Datenbank enthält.
+* Du greifst darauf über Views mit den Präfixen `USER_` (deine Objekte), `ALL_` (Objekte, auf die du Zugriff hast) und `DBA_` (alle Objekte, Admin-Sicht) zu.
+* Du kennst den Zweck einiger wichtiger Views wie `USER_OBJECTS`, `USER_TABLES`, `USER_TAB_COLUMNS`, `USER_SOURCE` und `USER_ERRORS`.
+* Du weißt, dass du dir nicht alle Namen merken musst, sondern verstehst, wo du suchen kannst.
+* Du kannst einfache `SELECT`-Anweisungen verwenden, um Informationen aus dem Data Dictionary abzufragen.
+
+---
+
+**Abschluss:**
+
+Wir haben nun alle Themenbereiche durchgearbeitet, die du in deiner ursprünglichen Anfrage aufgelistet hast:
+
+1.  **Trigger** (`INSTEAD OF`, `COMPOUND`) mit Beispielen.
+2.  **Datenstrukturen** (Records via `%ROWTYPE` und `TYPE IS RECORD`, Nested Tables) inklusive Deklaration, Instanziierung, Methoden, Iteration und Verwendung in Packages/Parametern.
+3.  **Package-Details** (Sichtbarkeit Public/Private, Lebensdauer von Variablen/State, Initialisierungsblock, Typ-/Exception-Deklaration).
+4.  **Fehlerbehandlung / Exceptions** (System-Exceptions, benannte und unbenannte benutzerdefinierte Exceptions, `PRAGMA EXCEPTION_INIT`).
+5.  **Native Dynamic SQL** (`EXECUTE IMMEDIATE`, Cursor-Variablen mit `OPEN FOR`/`Workspace`/`CLOSE`, Bedeutung von Bindevariablen).
+6.  **Grundlagen Data Dictionary**.
