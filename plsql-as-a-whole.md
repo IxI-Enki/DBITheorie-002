@@ -2853,9 +2853,9 @@ END;
 
 ---
 
-# **Schritt 15: Packages Teil 2 – Sichtbarkeit, Lebensdauer & Initialisierung**
+# **Schritt 15: Packages – Sichtbarkeit, Lebensdauer & Initialisierung**
 
-Wir wissen bereits, dass Packages aus einer Spezifikation (öffentlich) und einem Body (Implementierung + privat) bestehen. Das hat direkte Auswirkungen darauf, was wo sichtbar ist und wie lange Variablen ihren Zustand behalten.
+ Packages bestehen aus einer Spezifikation (öffentlich) und einem Body (Implementierung + privat). Das hat direkte Auswirkungen darauf, was wo sichtbar ist und wie lange Variablen ihren Zustand behalten.
 
 **1. Sichtbarkeit (Public vs. Private)**
 
